@@ -45,7 +45,7 @@ Edit and change the parameters from `fastUpgradeWAP.exe.config` accordingly:
 </setting>
 ```
 
-### Usage:
+## Usage:
 
 **Apache:**
 ```
@@ -58,3 +58,6 @@ NOTE: _file starting with `httpd` decides if it's Apache upgrade_
 fastUpgradeWAP.exe C:\Kits\php-8.0.21-nts-Win32-vs16-x64.zip
 ```
 NOTE: _file starting with `php` decides if it's PHP upgrade_
+
+### Permissions
+**If `APACHE_RELATED_SERVICES_TO_STOP` or `PHP_RELATED_SERVICES_TO_STOP` are used, elevated permissions are needed for this to work. Run as Administrator**
