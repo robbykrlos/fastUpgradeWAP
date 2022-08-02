@@ -79,6 +79,10 @@ namespace fastUpgradeWAP
                         DirectoryInfo versionDir = GetVersionDirectory(apacheRoot);
 
                         string archiveDest = apacheRoot.Parent.FullName + "\\" + apacheRoot.Name + versionDir.Name;
+
+                        string tempDir = apacheRoot.Parent.FullName + "\\" + apacheRoot.Name + "_TMP";
+                        if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+
                         if (!Directory.Exists(archiveDest))
                         {
                             ToggleServices(Settings.Default.APACHE_RELATED_SERVICES_TO_STOP, false);
@@ -86,8 +90,15 @@ namespace fastUpgradeWAP
                             Directory.Move(apacheRoot.FullName, archiveDest);
                             Log("[RENAME] Archive current APACHE to " + archiveDest);
 
-                            ZipFile.ExtractToDirectory(zipFile.FullName, apacheRoot.FullName);
-                            Log("[UNZIP] Decompress APACHE zip into current APACHE folder");
+                            Log("[UNZIP] Unpacking APACHE zip ...");
+                            ZipFile.ExtractToDirectory(zipFile.FullName, tempDir);
+                            Log("[UNZIP] Unpacked APACHE zip into temporary folder");
+
+                            Directory.Move(tempDir + "\\Apache24", apacheRoot.FullName);
+                            Log("[RENAME] Move and rename APACHE from temporary folder to " + apacheRoot.FullName);
+
+                            Directory.Delete(tempDir, true);
+                            Log("[DELETE] Delete APACHE temporary folder");
 
                             Directory.CreateDirectory(apacheRoot.FullName + "_" + zipFile.Name.Replace(zipFile.Extension, string.Empty));
                             Log("[VERSION] Register new APACHE Version with a _version_folder.");
@@ -99,26 +110,33 @@ namespace fastUpgradeWAP
                                 if (File.Exists(archiveDest + "\\" + relativeFile))
                                 {
                                     File.Copy(archiveDest + "\\" + relativeFile, apacheRoot + relativeFile);
-                                    Log("[COPY] Copy file needed: " + relativeFile);
+                                    Log("[COPY] Copy file: " + relativeFile);
                                 }
                                 else
                                 {
+                                    //If it's a directory and not a file
                                     if (Directory.Exists(archiveDest + "\\" + relativeFile))
                                     {
-                                        Directory.CreateDirectory(apacheRoot + relativeFile);
-                                        Log("[COPY] Create needed directory: " + relativeFile);
+                                        //if directory already exists in the new apache installation folder
+                                        if (Directory.Exists(apacheRoot + relativeFile))
+                                        {
+                                            Directory.Move(apacheRoot + relativeFile, apacheRoot + relativeFile + "_orig");
+                                            Log("[RENAME] Apache has already folder " + relativeFile + ". Creating backup " + relativeFile + "_orig");
+                                        }
+                                        DirectoryCopy(archiveDest + "\\" + relativeFile, apacheRoot + relativeFile, true);
+                                        Log("[COPY] Copy directory: " + relativeFile);
                                     }
                                     else
                                     {
-                                        Log("[ERROR] File does not exists for copy: " + relativeFile);
+                                        Log("[WARNING] File does not exists for copy: " + relativeFile);
                                     }
                                 }
                             }
-                            ToggleServices(Settings.Default.APACHE_RELATED_SERVICES_TO_STOP, false);
+                            ToggleServices(Settings.Default.APACHE_RELATED_SERVICES_TO_STOP, true);
                         }
                         else
                         {
-                            Log("[ERROR] PHP exists already archived: " + archiveDest);
+                            Log("[ERROR] APACHE exists already archived: " + archiveDest);
                         }
                         Log("[DONE]");
                     }
@@ -149,18 +167,25 @@ namespace fastUpgradeWAP
                                 if (File.Exists(archiveDest + "\\" + relativeFile))
                                 {
                                     File.Copy(archiveDest + "\\" + relativeFile, phpRoot + relativeFile);
-                                    Log("[COPY] Copy file needed: " + relativeFile);
+                                    Log("[COPY] Copy file: " + relativeFile);
                                 }
                                 else
                                 {
+                                    //If it's a directory and not a file
                                     if (Directory.Exists(archiveDest + "\\" + relativeFile))
                                     {
-                                        Directory.CreateDirectory(phpRoot + relativeFile);
-                                        Log("[COPY] Create needed directory: " + relativeFile);
+                                        //if directory already exists in the new apache installation folder
+                                        if (Directory.Exists(phpRoot + relativeFile))
+                                        {
+                                            Directory.Move(phpRoot + relativeFile, phpRoot + relativeFile + "_orig");
+                                            Log("[RENAME] PHP has already folder " + relativeFile + ". Creating backup " + relativeFile + "_orig");
+                                        }
+                                        DirectoryCopy(archiveDest + "\\" + relativeFile, phpRoot + relativeFile, true);
+                                        Log("[COPY] Copy directory: " + relativeFile);
                                     }
                                     else
                                     {
-                                        Log("[ERROR] File does not exists for copy: " + relativeFile);
+                                        Log("[WARNING] File does not exists for copy: " + relativeFile);
                                     }
                                 }
                             }
@@ -180,6 +205,7 @@ namespace fastUpgradeWAP
                 }
             }
 
+            Log("Press any key to exit...");
             Console.ReadKey();
         }
 
@@ -195,32 +221,71 @@ namespace fastUpgradeWAP
                     ServiceControllerStatus status = serviceController.Status;
                     if (start)
                     {
-                        if (status == ServiceControllerStatus.Stopped)
+                        if (!status.Equals(ServiceControllerStatus.Running))
                         {
+                            Log($"[SERVICES] Starting service {service}...");
                             serviceController.Start();
                             serviceController.WaitForStatus(ServiceControllerStatus.Running);
+                            Log($"[SERVICES] Waiting for service({status}) {service} to start...");
                             Thread.Sleep(5000);
-                            if(status != ServiceControllerStatus.Running) Thread.Sleep(10000);
+                            status = serviceController.Status;
+                            if (status != ServiceControllerStatus.Running)
+                            {
+                                Log($"[SERVICES] Waiting even more for service({status}) {service} to start...");
+                                Thread.Sleep(5000);
+                                status = serviceController.Status;
+                                if (status != ServiceControllerStatus.Running)
+                                {
+                                    Log($"[SERVICES] Waiting even more for service({status}) {service} to start...");
+                                    Thread.Sleep(10000);
+                                    status = serviceController.Status;
+                                    if (status != ServiceControllerStatus.Running)
+                                    {
+                                        Log($"[SERVICES] {service} doesn't seem to want to start...({status})");
+                                    }
+                                }
+                            }
+
                             Log("[SERVICES] Started related services " + relatedServices);
                         }
                         else
                         {
-                            Log("[ERROR] Service already RUNNING.");
+                            Log($"[WARNING] Service({status}) was already RUNNING.");
                         }
                     }
                     else
                     {
-                        if (status == ServiceControllerStatus.Running)
+                        if (!status.Equals(ServiceControllerStatus.Stopped))
                         {
+                            Log($"[SERVICES] Stopping service {service}...");
                             serviceController.Stop();
                             serviceController.WaitForStatus(ServiceControllerStatus.Stopped);
+                            Log($"[SERVICES] Waiting for service({status}) {service} to stop...");
                             Thread.Sleep(5000);
-                            if (status != ServiceControllerStatus.Stopped) Thread.Sleep(10000);
+                            status = serviceController.Status;
+                            if (status != ServiceControllerStatus.Stopped)
+                            {
+                                Log($"[SERVICES] Waiting even more for service({status}) {service} to stop...");
+                                Thread.Sleep(5000);
+                                status = serviceController.Status;
+                                if (status != ServiceControllerStatus.Stopped)
+                                {
+                                    Log($"[SERVICES] Waiting even more for service({status}) {service} to stop...");
+                                    Thread.Sleep(10000);
+
+                                    status = serviceController.Status;
+                                    if (status != ServiceControllerStatus.Stopped)
+                                    {
+                                        Log($"[SERVICES] {service} doesn't seem to want to stop...({status})");
+                                    }
+                                }
+                            }
+
                             Log("[SERVICES] Stopped related services " + relatedServices);
                         }
                         else
                         {
-                            Log("[ERROR] Service already STOPPED.");
+                            Log($"[WARNING] Service({status}) was already STOPPED.");
                         }
                     }
                 }
@@ -230,20 +295,31 @@ namespace fastUpgradeWAP
         private static void Log(string text, bool newLine = true)
         {
             ConsoleColor color = ConsoleColor.White;
+            ConsoleColor bgColor = ConsoleColor.Black;
 
             if (text.StartsWith("[ERROR]"))
             {
-                color = ConsoleColor.Red;
+                color = ConsoleColor.White;
+                bgColor = ConsoleColor.DarkRed;
+            }
+            if (text.StartsWith("[WARNING]"))
+            {
+                color = ConsoleColor.Black;
+                bgColor = ConsoleColor.DarkYellow;
+            }
+            if (text.StartsWith("[DELETE]"))
+            {
+                color = ConsoleColor.DarkRed;
             }
             if (text.StartsWith("[COPY]"))
             {
                 color = ConsoleColor.Cyan;
             }
-            if (text.StartsWith("[RENAME]"))
+            if (text.StartsWith("[VERSION]"))
             {
                 color = ConsoleColor.Yellow;
             }
-            if (text.StartsWith("[VERSION]"))
+            if (text.StartsWith("[RENAME]"))
             {
                 color = ConsoleColor.DarkCyan;
             }
@@ -260,11 +336,20 @@ namespace fastUpgradeWAP
                 color = ConsoleColor.Green;
             }
 
-
+            //Backup default colors to revert later.
             ConsoleColor defaultColor = Console.ForegroundColor;
+            ConsoleColor defaultBgColor = Console.BackgroundColor;
+
+            //set colors
             Console.ForegroundColor = color;
+            Console.BackgroundColor = bgColor;
+
+            //print
             Console.Write(text + (newLine ? NEWLINE : string.Empty));
+
+            //revert colors
             Console.ForegroundColor = defaultColor;
+            Console.BackgroundColor = defaultBgColor;
         }
 
         private static DirectoryInfo GetVersionDirectory(DirectoryInfo parentDir)
@@ -279,6 +364,54 @@ namespace fastUpgradeWAP
             }
 
             return null;
+        }
+
+        private static void DirectoryCopy(
+        string sourceDirName, string destDirName, bool copySubDirs)
+        {
+            DirectoryInfo dir = new DirectoryInfo(sourceDirName);
+            DirectoryInfo[] dirs = dir.GetDirectories();
+
+            // If the source directory does not exist, throw an exception.
+            if (!dir.Exists)
+            {
+                throw new DirectoryNotFoundException(
+                    "Source directory does not exist or could not be found: "
+                    + sourceDirName);
+            }
+
+            // If the destination directory does not exist, create it.
+            if (!Directory.Exists(destDirName))
+            {
+                Directory.CreateDirectory(destDirName);
+            }
+
+
+            // Get the file contents of the directory to copy.
+            FileInfo[] files = dir.GetFiles();
+
+            foreach (FileInfo file in files)
+            {
+                // Create the path to the new copy of the file.
+                string temppath = Path.Combine(destDirName, file.Name);
+
+                // Copy the file.
+                file.CopyTo(temppath, false);
+            }
+
+            // If copySubDirs is true, copy the subdirectories.
+            if (copySubDirs)
+            {
+
+                foreach (DirectoryInfo subdir in dirs)
+                {
+                    // Create the subdirectory.
+                    string temppath = Path.Combine(destDirName, subdir.Name);
+
+                    // Copy the subdirectories.
+                    DirectoryCopy(subdir.FullName, temppath, copySubDirs);
+                }
+            }
         }
     }
 }

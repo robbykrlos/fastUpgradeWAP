@@ -18,7 +18,7 @@
       <Value Profile="(Default)">php.ini,tmp_sessions,tmp_uploads,ext\php_redis.dll,ext\cairo.dll,ext\expat.dll,ext\fontconfig.dll,ext\gobject-2.dll,ext\libharfbuzz-0.dll,ext\librrd-4.dll,ext\pango-1.dll,ext\pangocairo-1.dll,ext\pangoft2-1.dll,ext\pangowin32-1.dll,ext\php_rrd.dll,ext\pixman-1.dll</Value>
     </Setting>
     <Setting Name="PHP_RELATED_SERVICES_TO_STOP" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">Apache2.4</Value>
+      <Value Profile="(Default)" />
     </Setting>
   </Settings>
 </SettingsFile>

@@ -70,7 +70,7 @@ namespace fastUpgradeWAP.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Apache2.4")]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string PHP_RELATED_SERVICES_TO_STOP {
             get {
                 return ((string)(this["PHP_RELATED_SERVICES_TO_STOP"]));
