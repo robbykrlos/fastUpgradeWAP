@@ -75,6 +75,7 @@ namespace fastUpgradeWAP
                 {
                     if (isApache)
                     {
+                        Log("[INFO] APACHE installation package detected.");
                         DirectoryInfo apacheRoot = new DirectoryInfo(Settings.Default.APACHE_ROOT);
                         DirectoryInfo versionDir = GetVersionDirectory(apacheRoot);
 
@@ -94,7 +95,20 @@ namespace fastUpgradeWAP
                             ZipFile.ExtractToDirectory(zipFile.FullName, tempDir);
                             Log("[UNZIP] Unpacked APACHE zip into temporary folder");
 
-                            Directory.Move(tempDir + "\\Apache24", apacheRoot.FullName);
+                            string innerApacheKit = "Apache24";
+                            if (!Directory.Exists(tempDir + "\\" + innerApacheKit))
+                            {
+                                if (Directory.Exists(tempDir + "\\Apache22"))
+                                {
+                                    innerApacheKit = "Apache22";
+                                }
+                                else
+                                {
+                                    Log("[ERROR] Apache installation kit does not contain expected inner folder Apache22 or Apache24.");
+                                    return;
+                                }
+                            }
+                            Directory.Move(tempDir + "\\" + innerApacheKit, apacheRoot.FullName);
                             Log("[RENAME] Move and rename APACHE from temporary folder to " + apacheRoot.FullName);
 
                             Directory.Delete(tempDir, true);
@@ -143,6 +157,7 @@ namespace fastUpgradeWAP
 
                     if (isPhp)
                     {
+                        Log("[INFO] PHP installation package detected.");
                         DirectoryInfo phpRoot = new DirectoryInfo(Settings.Default.PHP_ROOT);
                         DirectoryInfo versionDir = GetVersionDirectory(phpRoot);
 
@@ -306,6 +321,11 @@ namespace fastUpgradeWAP
             {
                 color = ConsoleColor.Black;
                 bgColor = ConsoleColor.DarkYellow;
+            }
+            if (text.StartsWith("[INFO]"))
+            {
+                color = ConsoleColor.White;
+                bgColor = ConsoleColor.DarkBlue;
             }
             if (text.StartsWith("[DELETE]"))
             {
