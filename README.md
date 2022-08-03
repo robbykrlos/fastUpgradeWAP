@@ -58,7 +58,7 @@ Edit and change the parameters from `fastUpgradeWAP.exe.config` accordingly:
 fastUpgradeWAP.exe C:\Kits\httpd-2.4.54-win64-VS16.zip
 ```
 NOTE: _file starting with `httpd` decides if it's Apache upgrade_
-NOTE: It expects the `.zip` file to have an inner folder `Apache24`.
+NOTE: It is expected the `.zip` file to have an inner folder `Apache22` or `Apache24`.
 
 ### PHP:
 ```
