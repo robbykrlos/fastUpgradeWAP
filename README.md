@@ -1,9 +1,11 @@
 # fastUpgradeWAP
 **Fast upgrade for Apache and PHP on Windows.**
 
-Do you work on Windows and use manual configured Apache and PHP instances? 
+Do you work on Windows and use manual configured Apache and PHP instances? Do you constantly update your Apache and PHP using:
+- PHP : https://windows.php.net/download/ - "php-x.x.xx-xxx-xxxxx-xxxx-xxx.zip"
+- Apache : https://www.apachelounge.com/download/ - "httpd-2.4.xx-xxxxxx-xxxx.zip "
 
-This command line tool helps you automate the upgrade process using the Apache/PHP windows installation binary packages(.zip) as an input and some configuration parameters to point where the current instalations are and various other options.
+This command line tool helps you automate the upgrade process using the Apache/PHP windows installation packages(.zip) as an input and some configuration parameters to point where the current instalations are and various other options.
 
 ### Configuration:
 Edit and change the parameters from `fastUpgradeWAP.exe.config` accordingly:
